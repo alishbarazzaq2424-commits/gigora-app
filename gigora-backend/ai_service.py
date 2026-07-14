@@ -103,12 +103,14 @@ def analyze_profile(profile_text: str) -> dict:
         }
 
 
-def optimize_gig(title: str, description: str) -> str:
+def optimize_gig(title: str, description: str, category: str) -> str:
     try:
         model = get_model()
-
         prompt = f"""
-        Optimize this Fiverr gig for SEO.
+        You are a Fiverr SEO expert.
+
+        Category:
+        {category}
 
         Title:
         {title}
@@ -116,7 +118,9 @@ def optimize_gig(title: str, description: str) -> str:
         Description:
         {description}
 
-        Improve the title and description using relevant keywords.
+        Optimize the title and description.
+        Suggests 5 SEO tags.
+        Give SEO improvrment tips.
         """
 
         response = model.generate_content(prompt)
@@ -124,10 +128,9 @@ def optimize_gig(title: str, description: str) -> str:
 
     except Exception as e:
         print("SEO Optimization Error:", e)
-
         return """
+        
 Optimized Title: Professional WordPress Website Developer
-
 Optimized Description:
 I will build a responsive, SEO-friendly, and modern WordPress website tailored to your business needs.
 Fast delivery, clean design, and optimized performance included.

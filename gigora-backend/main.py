@@ -53,10 +53,12 @@ def profile_analyzer(data: dict):
 def seo_optimizer(data: dict):
     result = optimize_gig(
         data["title"],
-        data["description"]
+        data["description"],
+        data["category"]
     )
 
     return {
         "optimized_content": result
     }
+    
     
