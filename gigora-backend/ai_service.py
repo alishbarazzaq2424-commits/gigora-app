@@ -12,7 +12,7 @@ api_keys = [
 ]
 
 api_keys = [key for key in api_keys if key]
-
+print("Total Gemini Keys Loaded:", len(api_keys))
 if not api_keys:
     raise ValueError("No Gemini API keys found in .env file")
 
@@ -22,13 +22,17 @@ current_key_index = 0
 def get_model():
     global current_key_index
 
-    try:
-        genai.configure(api_key=api_keys[current_key_index])
-        return genai.GenerativeModel("gemini-2.0-flash")
+    for i in range(len(api_keys)):
+        try:
+            genai.configure(api_key=api_keys[current_key_index])
+            return genai.GenerativeModel("gemini-2.0-flash")
 
-    except Exception as e:
-        print("Gemini Setup Error:", e)
-        raise e
+        except Exception:
+            current_key_index = (current_key_index + 1) % len(api_keys)
+
+    raise Exception("All Gemini API keys failed")
+
+    
 
 
 def generate_proposal(job_post: str) -> str:
@@ -87,10 +91,11 @@ def analyze_profile(profile_text: str) -> dict:
 
         text = response.text.strip()
 
-        if text.startswith("```json"):
-            text = text.replace("```json", "").replace("```", "").strip()
+        if text.startswith("'''json"):
+            text = text.replace("'''json","").replace("'''").strip()
 
-        return json.loads(text)
+        result = json.loads(text)
+        return result
 
     except Exception as e:
         print("Profile Analysis Error:", e)
@@ -103,35 +108,108 @@ def analyze_profile(profile_text: str) -> dict:
         }
 
 
-def optimize_gig(title: str, description: str, category: str) -> str:
+def optimize_gig(title: str, description: str, category: str) -> dict:
     try:
         model = get_model()
+
         prompt = f"""
         You are a Fiverr SEO expert.
 
-        Category:
-        {category}
+        Return ONLY valid JSON.
 
-        Title:
-        {title}
+        Category: {category}
+        Title: {title}
+        Description: {description}
 
-        Description:
-        {description}
-
-        Optimize the title and description.
-        Suggests 5 SEO tags.
-        Give SEO improvrment tips.
+        Format:
+        {{
+            "optimized_title": "",
+            "tags": ["","","","",""],
+            "optimized_description": "",
+            "scores": {{
+                "title": 0,
+                "tags": 0,
+                "description": 0,
+                "overall": 0
+            }},
+            "tips": ["","",""]
+        }}
         """
 
         response = model.generate_content(prompt)
-        return response.text
+        print("SEO Response:", response.text)
+        text = response.text.strip()
+
+        if text.startswith("```json"):
+            text = text.replace("```json", "").replace("```", "").strip()
+
+
+        result = json.loads(text)
+
+        for i, tag in enumerate(result["tags"]):
+            words = tag.split()
+            
+            print("TAG =", repr(tag))
+            print("WORDS =", len(words))
+            print("LENGTH =", len(tag))
+            print("VALID =", 2 <=
+        len(words) <= 5 and len(tag) <= 20)
+
+
+            result["tags"][i] = {
+                "text": tag,
+                "valid": (
+                    2<=len(words) <= 5
+                     and len(tag) <= 20
+                )
+            } 
+        valid_tags = sum(
+            1 for tag in result["tags"]
+            if tag["valid"]
+        )
+        title_score = 10 if len(result["optimized_title"]) <= 80 else 5
+        tag_score = min(valid_tags * 2, 10)
+        description_score = (
+            10 if 
+            len(result["optimized_description"]) >= 100
+            else 5
+        )
+        overall_score = round(
+            (title_score + tags_score + description_score) /3
+        )
+        result["scores"] = {
+            "title": title_score,
+            "tags": tags_score,
+            "description": description_score,
+            "overall": overall_score
+        }
+        return result
 
     except Exception as e:
         print("SEO Optimization Error:", e)
-        return """
-        
-Optimized Title: Professional WordPress Website Developer
-Optimized Description:
-I will build a responsive, SEO-friendly, and modern WordPress website tailored to your business needs.
-Fast delivery, clean design, and optimized performance included.
-"""
+
+
+        return {
+            "optimized_title": title,
+            "optimized_description": description,
+            "tags": [
+                {
+                    "text": "wordpress website",
+                    "valid": True
+                },
+                {
+                    "text": "web design",
+                    "valid": True
+                }
+            ],
+            "scores": {
+                "title": 0,
+                "tags": 0,
+                "description": 0,
+                "overall": 0
+            },
+            "tips": ["Try again later"]
+        }
+
+
+

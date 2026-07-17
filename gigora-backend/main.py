@@ -48,17 +48,16 @@ def profile_analyzer(data: dict):
 
     return result
 
-
+    
 @app.post("/api/seo")
 def seo_optimizer(data: dict):
+    title = data.get("title", "")
+    description = data.get("description", "")
+    category = data.get("category", "")
     result = optimize_gig(
-        data["title"],
-        data["description"],
-        data["category"]
+        title,
+        description,
+        category
     )
 
-    return {
-        "optimized_content": result
-    }
-    
-    
+    return result
