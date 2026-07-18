@@ -12,6 +12,14 @@ function App() {
   const [proposalLoading, setProposalLoading] = useState(false);
   const [proposalError, setProposalError] = useState("");
 
+  const [tone, setTone] = useState("Professional");
+const [skill, setSkill] = useState("Web Dev");
+const [platform, setPlatform] = useState("Upwork");
+const [length, setLength] = useState("medium");
+
+const [wordCount, setWordCount] = useState(0);
+const [keyPoints, setKeyPoints] = useState([]);
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
@@ -54,6 +62,10 @@ function App() {
         },
         body: JSON.stringify({
           job_description: jobPost,
+          tone,
+          skill,
+          platform,
+          length
         }),
       });
 
@@ -63,7 +75,9 @@ function App() {
         throw new Error("AI service quota exceeded. Please try again later.");
       }
 
-      setProposal(data.proposal);
+      setProposal(data.text);
+      setWordCount(data.word_count || 0);
+      setKeyPoints(data.key_points || []);
     } catch (error) {
       setProposalError("AI service quota exceeded. Please try again later.");
     }
@@ -75,6 +89,23 @@ function App() {
     navigator.clipboard.writeText(proposal);
     alert("Proposal copied to clipboard!");
   };
+
+  const downloadProposal = () => {
+  const element = document.createElement("a");
+
+  const file = new Blob([proposal], {
+    type: "text/plain"
+  });
+
+  element.href = URL.createObjectURL(file);
+
+  element.download =
+    `proposal-${new Date().toISOString().split("T")[0]}.txt`;
+
+  document.body.appendChild(element);
+  element.click();
+  document.body.removeChild(element);
+};
 
   const optimizeSEO = async () => {
     try {
@@ -170,6 +201,64 @@ function App() {
       <br />
       <br />
 
+       <h3>Tone</h3>
+
+<button onClick={() => setTone("Professional")}>
+  Professional
+</button>
+
+<button onClick={() => setTone("Friendly")}>
+  Friendly
+</button>
+
+<button onClick={() => setTone("Confident")}>
+  Confident
+</button>
+
+<br /><br />
+
+<h3>Skill</h3>
+
+<select
+  value={skill}
+  onChange={(e) => setSkill(e.target.value)}
+>
+  <option>Web Dev</option>
+  <option>Graphic Design</option>
+  <option>Writing</option>
+  <option>Marketing</option>
+  <option>Mobile Dev</option>
+  <option>AI/ML</option>
+  <option>Other</option>
+</select>
+
+<br /><br />
+
+<h3>Platform</h3>
+
+<select
+  value={platform}
+  onChange={(e) => setPlatform(e.target.value)}
+>
+  <option>Upwork</option>
+  <option>Fiverr</option>
+</select>
+
+<br /><br />
+
+<h3>Length</h3>
+
+<select
+  value={length}
+  onChange={(e) => setLength(e.target.value)}
+>
+  <option value="short">Short</option>
+  <option value="medium">Medium</option>
+  <option value="long">Long</option>
+</select>
+
+<br /><br />
+
       <button onClick={generateProposal}>
         Generate Proposal
       </button>
@@ -187,10 +276,28 @@ function App() {
           <h3>Generated Proposal</h3>
 
           <p>{proposal}</p>
+           <p>
+  <strong>Word Count:</strong> {wordCount}
+</p>
+
+<h4>Key Selling Points</h4>
+
+<ul>
+  {keyPoints.map((point, index) => (
+    <li key={index}>{point}</li>
+  ))}
+</ul>
+
 
           <button onClick={copyProposal}>
             Copy Proposal
           </button>
+          <br />
+<br />
+
+<button onClick={downloadProposal}>
+  Download Proposal
+</button>
         </div>
       )}
 
