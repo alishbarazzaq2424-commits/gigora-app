@@ -101,3 +101,46 @@ def seo_optimizer(data: dict):
 
     return result
 
+@app.get("/api/history")
+def get_history():
+
+    result = (
+        supabase.table("history")
+        .select("*")
+        .order("id", desc=True)
+        .limit(20)
+        .execute()
+    )
+
+    return result.data
+
+
+@app.delete("/api/history/{history_id}")
+def delete_history(history_id: int):
+
+    supabase.table("history") \
+        .delete() \
+        .eq("id", history_id) \
+        .execute()
+
+    return {"message": "Deleted"}
+
+
+@app.get("/api/stats")
+def get_stats():
+
+    result = (
+        supabase.table("history")
+        .select("type")
+        .execute()
+    )
+
+    data = result.data
+
+    return {
+        "proposals": len([x for x in data if x["type"] == "proposal"]),
+        "seo": len([x for x in data if x["type"] == "seo"]),
+        "profiles": len([x for x in data if x["type"] == "profile"]),
+        "total": len(data)
+    }
+    
