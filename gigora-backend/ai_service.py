@@ -25,6 +25,9 @@ def get_model():
     for i in range(len(api_keys)):
         try:
             genai.configure(api_key=api_keys[current_key_index])
+
+            print("Using key:", api_keys[current_key_index][:10])
+
             return genai.GenerativeModel("gemini-2.0-flash")
 
         except Exception:
@@ -33,9 +36,81 @@ def get_model():
     raise Exception("All Gemini API keys failed")
 
     
+def generate_proposal(
+    job_post: str,
+    tone: str,
+    skill: str,
+    platform: str,
+    length: str
+) -> dict:
 
+    try:
+        model = get_model()
 
-def generate_proposal(job_post: str) -> str:
+        word_limits = {
+            "short": 100,
+            "medium": 200,
+            "long": 300
+        }
+
+        words = word_limits.get(length.lower(), 200)
+
+        example = """
+Hi, I reviewed your project carefully.
+With my experience in this field, I can deliver high-quality results within your timeline.
+I focus on communication, quality, and client satisfaction.
+"""
+
+        prompt = f"""
+You are an expert freelancer proposal writer.
+
+Platform: {platform}
+Skill: {skill}
+Tone: {tone}
+
+Job Post:
+{job_post}
+
+Write around {words} words.
+
+Example:
+{example}
+
+Return ONLY valid JSON:
+
+{{
+"text": "",
+"word_count": 0,
+"key_points": [
+"",
+"",
+""
+]
+}}
+"""
+
+        response = model.generate_content(prompt)
+
+        text = response.text.strip()
+
+        if text.startswith("```json"):
+            text = text.replace("```json", "").replace("```", "").strip()
+
+        return json.loads(text)
+
+    except Exception as e:
+        print("Proposal Error:", e)
+
+        return {
+            "text": "Dear Client, I can help you complete this project with quality work and timely delivery.",
+            "word_count": 20,
+            "key_points": [
+                "Experience",
+                "Quality work",
+                "Fast delivery"
+            ]
+        }
+        
     global current_key_index
 
     try:
