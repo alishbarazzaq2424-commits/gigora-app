@@ -6,6 +6,7 @@ from ai_service import (
     analyze_profile,
     optimize_gig
 )
+from usage_service import check_usage, increment_usage
 
 def save_history(user_id, type, input_text, output):
     try:
@@ -45,10 +46,22 @@ def health():
 @app.get("/test-supabase")
 def test_supabase():
     return {"message": "Supabase connected successfully"}
+@app.post("/api/profile")
+def profile_analyzer(data: dict):
 
+    usage = check_usage()
+
+    if not usage["allowed"]:
+        return {"error": "Daily limit reached"}
+
+    result = analyze_profile(data["profile_text"])
 
 @app.post("/api/proposal")
 def create_proposal(data: dict):
+    usage = check_usage()
+
+    if not usage["allowed"]:
+        return {"error": "Daily limit reached"}
     result = generate_proposal(
         job_post=data.get("job_description", ""),
         tone=data.get("tone", "Professional"),
@@ -64,11 +77,19 @@ def create_proposal(data: dict):
         result
     )
 
+    increment_usage()
+
     return result
 
 
 @app.post("/api/profile")
 def profile_analyzer(data: dict):
+
+    usage = check_usage()
+
+    if not usage["allowed"]:
+        return {"error": "Daily limit reached"}
+
     result = analyze_profile(data["profile_text"])
 
     save_history(
@@ -78,11 +99,19 @@ def profile_analyzer(data: dict):
         result
     )
 
+    increment_usage()
+
     return result
 
 
 @app.post("/api/seo")
 def seo_optimizer(data: dict):
+
+    usage = check_usage()
+
+    if not usage["allowed"]:
+       return {"error": "Daily limit reached"}
+
     title = data.get("title", "")
     description = data.get("description", "")
     category = data.get("category", "")
@@ -99,6 +128,8 @@ def seo_optimizer(data: dict):
         title,
         result
     )
+
+    increment_usage()
 
     return result
 
@@ -151,4 +182,25 @@ def get_stats():
     except Exception as e:
         return {"error": str(e)}
         
+    
+@app.get("/api/usage")
+def get_usage():
+    from datetime import date
+
+    today = str(date.today())
+
+    result = (
+        supabase.table("usage")
+        .select("*")
+        .eq("user_id", "test_user")
+        .eq("date", today)
+        .execute()
+    )
+
+    used = result.data[0]["count"] if result.data else 0
+
+    return {
+        "used": used,
+        "remaining": max(0, 5 - used)
+    }
     
