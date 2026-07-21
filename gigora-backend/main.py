@@ -7,8 +7,6 @@ from ai_service import (
     optimize_gig
 )
 
-from database import supabase
-
 def save_history(user_id, type, input_text, output):
     try:
         response = supabase.table("history").insert({
@@ -17,6 +15,9 @@ def save_history(user_id, type, input_text, output):
             "input_text": str(input_text)[:500],
             "output": str(output)
         }).execute()
+
+        print("History Saved:", response.data)
+
     except Exception as e:
         print("History Save Error:", e)
 
@@ -103,16 +104,19 @@ def seo_optimizer(data: dict):
 
 @app.get("/api/history")
 def get_history():
+    try:
+        result = (
+            supabase.table("history")
+            .select("*")
+            .order("id", desc=True)
+            .limit(20)
+            .execute()
+        )
 
-    result = (
-        supabase.table("history")
-        .select("*")
-        .order("id", desc=True)
-        .limit(20)
-        .execute()
-    )
+        return result.data
 
-    return result.data
+    except Exception as e:
+        return {"error": str(e)}
 
 
 @app.delete("/api/history/{history_id}")
@@ -128,19 +132,23 @@ def delete_history(history_id: int):
 
 @app.get("/api/stats")
 def get_stats():
+    try:
+        result = (
+            supabase.table("history")
+            .select("type")
+            .execute()
+        )
 
-    result = (
-        supabase.table("history")
-        .select("type")
-        .execute()
-    )
+        data = result.data
 
-    data = result.data
+        return {
+            "proposals": len([x for x in data if x["type"] == "proposal"]),
+            "seo": len([x for x in data if x["type"] == "seo"]),
+            "profiles": len([x for x in data if x["type"] == "profile"]),
+            "total": len(data)
+        }
 
-    return {
-        "proposals": len([x for x in data if x["type"] == "proposal"]),
-        "seo": len([x for x in data if x["type"] == "seo"]),
-        "profiles": len([x for x in data if x["type"] == "profile"]),
-        "total": len(data)
-    }
+    except Exception as e:
+        return {"error": str(e)}
+        
     

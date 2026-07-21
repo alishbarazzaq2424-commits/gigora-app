@@ -1,9 +1,13 @@
 import os
 import json
-import google.generativeai as genai
+from groq import Groq
 from dotenv import load_dotenv
 
 load_dotenv()
+
+client = Groq(
+    api_key=os.getenv("GROQ_API_KEY")
+)
 
 api_keys = [
     os.getenv("GEMINI_API_KEY_1"),
@@ -20,20 +24,7 @@ current_key_index = 0
 
 
 def get_model():
-    global current_key_index
-
-    for i in range(len(api_keys)):
-        try:
-            genai.configure(api_key=api_keys[current_key_index])
-
-            print("Using key:", api_keys[current_key_index][:10])
-
-            return genai.GenerativeModel("gemini-2.0-flash")
-
-        except Exception:
-            current_key_index = (current_key_index + 1) % len(api_keys)
-
-    raise Exception("All Gemini API keys failed")
+    return client
 
     
 def generate_proposal(
@@ -89,9 +80,18 @@ Return ONLY valid JSON:
 }}
 """
 
-        response = model.generate_content(prompt)
+        response = model.chat.completions.create(
+    model="llama-3.3-70b-versatile",
+    messages=[
+        {
+            "role": "user",
+            "content": prompt
+        }
+    ],
+    max_tokens=800
+)
 
-        text = response.text.strip()
+        text = response.choices[0].message.content.strip()
 
         if text.startswith("```json"):
             text = text.replace("```json", "").replace("```", "").strip()
@@ -162,12 +162,21 @@ def analyze_profile(profile_text: str) -> dict:
         }}
         """
 
-        response = model.generate_content(prompt)
+        response = model.chat.completions.create(
+    model="llama-3.3-70b-versatile",
+    messages=[
+        {
+            "role": "user",
+            "content": prompt
+        }
+    ],
+    max_tokens=800
+)
 
-        text = response.text.strip()
+        text = response.choices[0].message.content.strip()
 
-        if text.startswith("'''json"):
-            text = text.replace("'''json","").replace("'''").strip()
+        if text.startswith("```json"):
+            text = text.replace("```json", "").replace("```", "").strip()
 
         result = json.loads(text)
         return result
@@ -211,13 +220,25 @@ def optimize_gig(title: str, description: str, category: str) -> dict:
         }}
         """
 
-        response = model.generate_content(prompt)
-        print("SEO Response:", response.text)
-        text = response.text.strip()
+        response = model.chat.completions.create(
+    model="llama-3.3-70b-versatile",
+    messages=[
+        {
+            "role": "user",
+            "content": prompt
+        }
+    ],
+    max_tokens=800
+)
 
-        if text.startswith("```json"):
-            text = text.replace("```json", "").replace("```", "").strip()
+        text = response.choices[0].message.content.strip()
 
+        print("SEO Response:", text)
+
+        if text.startswith("```"):
+           text = text.replace("```json", "").replace("```", "").strip()
+  
+        print("RAW SEO TEXT =", repr(text))
 
         result = json.loads(text)
 
@@ -250,11 +271,11 @@ def optimize_gig(title: str, description: str, category: str) -> dict:
             else 5
         )
         overall_score = round(
-            (title_score + tags_score + description_score) /3
+            (title_score + tag_score + description_score) /3
         )
         result["scores"] = {
             "title": title_score,
-            "tags": tags_score,
+            "tags": tag_score,
             "description": description_score,
             "overall": overall_score
         }
@@ -285,6 +306,8 @@ def optimize_gig(title: str, description: str, category: str) -> dict:
             },
             "tips": ["Try again later"]
         }
+
+
 
 
 
