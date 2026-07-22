@@ -8,8 +8,24 @@ from ai_service import (
     optimize_gig
 )
 from usage_service import check_usage, increment_usage
+import re
+
+def sanitize(text: str) -> str:
+    clean = re.sub(r"<[^>]+>", "", text)  # remove HTML tags
+    clean = clean.strip()
+
+    if not clean:
+        raise HTTPException(
+            status_code=400,
+            detail="Input cannot be empty"
+        )
+
+    return clean[:2000]  
 
 security = HTTPBearer()
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from fastapi import Request
 
 def save_history(user_id, type, input_text, output):
     try:
@@ -60,6 +76,9 @@ async def get_current_user(
 
 app = FastAPI()
 
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
@@ -107,13 +126,18 @@ def login():
     }
 
 @app.post("/api/proposal")
-def create_proposal(data: dict, current_user=Depends(get_current_user)):
+@limiter.limit("20/minute")
+def create_proposal(request: Request, data: dict, current_user=Depends(get_current_user)):
     usage = check_usage()
 
     if not usage["allowed"]:
-        return {"error": "Daily limit reached"}
+        raise HTTPException(
+    status_code=429,
+    detail="Daily limit reached"
+)
+
     result = generate_proposal(
-        job_post=data.get("job_description", ""),
+        job_post = sanitize(data.get("job_description", "")),
         tone=data.get("tone", "Professional"),
         skill=data.get("skill", "Web Development"),
         platform=data.get("platform", "Upwork"),
@@ -133,14 +157,20 @@ def create_proposal(data: dict, current_user=Depends(get_current_user)):
 
 
 @app.post("/api/profile")
-def profile_analyzer(data: dict, current_user=Depends(get_current_user)):
+@limiter.limit("20/minute")
+def profile_analyzer(request: Request, data: dict, current_user=Depends(get_current_user)):
 
     usage = check_usage()
 
     if not usage["allowed"]:
-        return {"error": "Daily limit reached"}
+        raise HTTPException(
+    status_code=429,
+    detail="Daily limit reached"
+)
+    
+    profile_text = sanitize(data.get("profile_text"))
 
-    result = analyze_profile(data["profile_text"])
+    result = analyze_profile(profile_text)
 
     save_history(
         current_user["id"],
@@ -155,16 +185,20 @@ def profile_analyzer(data: dict, current_user=Depends(get_current_user)):
 
 
 @app.post("/api/seo")
-def seo_optimizer(data: dict, current_user=Depends(get_current_user)):
+@limiter.limit("20/minute")
+def seo_optimizer(request: Request, data: dict, current_user=Depends(get_current_user)):
 
     usage = check_usage()
 
     if not usage["allowed"]:
-       return {"error": "Daily limit reached"}
+       raise HTTPException(
+    status_code=429,
+    detail="Daily limit reached"
+)
 
-    title = data.get("title", "")
-    description = data.get("description", "")
-    category = data.get("category", "")
+    title = sanitize(data.get("title", ""))
+    description = sanitize(data.get("description", ""))
+    category = sanitize(data.get("category", ""))
 
     result = optimize_gig(
         title,
