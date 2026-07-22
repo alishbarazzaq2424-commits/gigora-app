@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from database import supabase
 from ai_service import (
@@ -7,6 +8,8 @@ from ai_service import (
     optimize_gig
 )
 from usage_service import check_usage, increment_usage
+
+security = HTTPBearer()
 
 def save_history(user_id, type, input_text, output):
     try:
@@ -21,6 +24,39 @@ def save_history(user_id, type, input_text, output):
 
     except Exception as e:
         print("History Save Error:", e)
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+):
+    token = credentials.credentials
+
+    try:
+        user = supabase.auth.get_user(token)
+
+        user_id = user.user.id
+
+        user_data = (
+            supabase.table("users")
+            .select("*")
+            .eq("id", user_id)
+            .execute()
+        )
+        print("USER DATA:", user_data.data)
+
+        return {
+            "id": user.user.id,
+            "email": user.user.email
+        }
+
+    except Exception as e:
+        print("AUTH ERROR:", e)
+
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired token"
+        )
+
+
 
 app = FastAPI()
 
@@ -46,18 +82,32 @@ def health():
 @app.get("/test-supabase")
 def test_supabase():
     return {"message": "Supabase connected successfully"}
-@app.post("/api/profile")
-def profile_analyzer(data: dict):
 
-    usage = check_usage()
+@app.post("/signup")
+def signup(data: dict):
 
-    if not usage["allowed"]:
-        return {"error": "Daily limit reached"}
+    result = supabase.auth.sign_up({
+        "email": "razzaqabdul1218@gmail.com",
+        "password": "yasir112233"
+    })
 
-    result = analyze_profile(data["profile_text"])
+    return result
+
+
+@app.post("/login")
+def login():
+
+    result = supabase.auth.sign_in_with_password({   
+        "email": "razzaqabdul1218@gmail.com",
+        "password": "yasir112233"
+    })
+
+    return {
+        "access_token": result.session.access_token
+    }
 
 @app.post("/api/proposal")
-def create_proposal(data: dict):
+def create_proposal(data: dict, current_user=Depends(get_current_user)):
     usage = check_usage()
 
     if not usage["allowed"]:
@@ -71,7 +121,7 @@ def create_proposal(data: dict):
     )
 
     save_history(
-        "test_user",
+        current_user["id"],
         "proposal",
         data.get("job_description", ""),
         result
@@ -83,7 +133,7 @@ def create_proposal(data: dict):
 
 
 @app.post("/api/profile")
-def profile_analyzer(data: dict):
+def profile_analyzer(data: dict, current_user=Depends(get_current_user)):
 
     usage = check_usage()
 
@@ -93,7 +143,7 @@ def profile_analyzer(data: dict):
     result = analyze_profile(data["profile_text"])
 
     save_history(
-        "test_user",
+        current_user["id"],
         "profile",
         data["profile_text"],
         result
@@ -105,7 +155,7 @@ def profile_analyzer(data: dict):
 
 
 @app.post("/api/seo")
-def seo_optimizer(data: dict):
+def seo_optimizer(data: dict, current_user=Depends(get_current_user)):
 
     usage = check_usage()
 
@@ -123,7 +173,7 @@ def seo_optimizer(data: dict):
     )
 
     save_history(
-        "test_user",
+        current_user["id"],
         "seo",
         title,
         result
@@ -134,7 +184,9 @@ def seo_optimizer(data: dict):
     return result
 
 @app.get("/api/history")
-def get_history():
+def get_history(
+    current_user=Depends(get_current_user)
+):
     try:
         result = (
             supabase.table("history")
@@ -162,7 +214,9 @@ def delete_history(history_id: int):
 
 
 @app.get("/api/stats")
-def get_stats():
+def get_stats(
+    current_user=Depends(get_current_user)
+):
     try:
         result = (
             supabase.table("history")
@@ -184,7 +238,9 @@ def get_stats():
         
     
 @app.get("/api/usage")
-def get_usage():
+def get_usage(
+    current_user=Depends(get_current_user)
+):
     from datetime import date
 
     today = str(date.today())
@@ -192,7 +248,7 @@ def get_usage():
     result = (
         supabase.table("usage")
         .select("*")
-        .eq("user_id", "test_user")
+        .eq("user_id", current_user["id"],)
         .eq("date", today)
         .execute()
     )
@@ -203,4 +259,9 @@ def get_usage():
         "used": used,
         "remaining": max(0, 5 - used)
     }
-    
+
+@app.get("/api/me")
+async def me(
+    current_user=Depends(get_current_user)
+):
+    return current_user
