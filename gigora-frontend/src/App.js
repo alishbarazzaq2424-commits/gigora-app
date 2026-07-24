@@ -1,5 +1,7 @@
 import React, { useState, useContext } from "react";
 import { UserContext } from "./context/UserContext";
+import BetaBanner from "./BetaBanner";
+import Onboarding from "./Onboarding";
 
 function App() {
   const { user } = useContext(UserContext);
@@ -131,6 +133,9 @@ const [keyPoints, setKeyPoints] = useState([]);
 
   return (
     <div style={{ padding: "20px", maxWidth: "100%" }}>
+      <BetaBanner/>
+      <Onboarding />
+      
       <div style={{
         padding: "10px",
         marginBottom: "20px",
@@ -203,15 +208,38 @@ const [keyPoints, setKeyPoints] = useState([]);
 
        <h3>Tone</h3>
 
-<button onClick={() => setTone("Professional")}>
+<button
+  onClick={() => setTone("Professional")}
+  style={{
+    backgroundColor: tone === "Professional" ? "#7c3aed" : "#ddd",
+    color: tone === "Professional" ? "white" : "black",
+    marginRight: "5px",
+    padding: "8px 12px"
+  }}
+>
   Professional
 </button>
 
-<button onClick={() => setTone("Friendly")}>
+<button
+  onClick={() => setTone("Friendly")}
+  style={{
+    backgroundColor: tone === "Friendly" ? "#7c3aed" : "#ddd",
+    color: tone === "Friendly" ? "white" : "black",
+    marginRight: "5px",
+    padding: "8px 12px"
+  }}
+>
   Friendly
 </button>
 
-<button onClick={() => setTone("Confident")}>
+<button
+  onClick={() => setTone("Confident")}
+  style={{
+    backgroundColor: tone === "Confident" ? "#7c3aed" : "#ddd",
+    color: tone === "Confident" ? "white" : "black",
+    padding: "8px 12px"
+  }}
+>
   Confident
 </button>
 
@@ -282,20 +310,51 @@ const [keyPoints, setKeyPoints] = useState([]);
 
 <h4>Key Selling Points</h4>
 
-<ul>
+<div>
   {keyPoints.map((point, index) => (
-    <li key={index}>{point}</li>
+    <span
+      key={index}
+      style={{
+        display: "inline-block",
+        backgroundColor: "#22c55e",
+        color: "white",
+        padding: "6px 12px",
+        margin: "5px",
+        borderRadius: "20px"
+      }}
+    >
+      {point}
+    </span>
   ))}
-</ul>
+</div>
 
 
-          <button onClick={copyProposal}>
-            Copy Proposal
-          </button>
+          <button
+  onClick={copyProposal}
+  style={{
+    backgroundColor: "#2563eb",
+    color: "white",
+    padding: "10px",
+    border: "none",
+    borderRadius: "5px"
+  }}
+>
+  Copy Proposal
+</button>
           <br />
 <br />
 
-<button onClick={downloadProposal}>
+<button
+  onClick={downloadProposal}
+  style={{
+    backgroundColor: "#16a34a",
+    color: "white",
+    padding: "10px",
+    border: "none",
+    borderRadius: "5px",
+    marginLeft: "10px"
+  }}
+>
   Download Proposal
 </button>
         </div>
