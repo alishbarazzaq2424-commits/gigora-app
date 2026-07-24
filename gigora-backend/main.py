@@ -23,6 +23,18 @@ def sanitize(text: str) -> str:
     return clean[:2000]  
 
 security = HTTPBearer()
+import os
+import stripe
+from dotenv import load_dotenv
+
+load_dotenv()
+
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")
+
+print("ENV FILE LOADED")
+print("STRIPE KEY:", repr(os.getenv("STRIPE_SECRET_KEY")))
+print("PRICE ID:", repr(os.getenv("STRIPE_PRICE_ID")))
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from fastapi import Request
@@ -59,9 +71,14 @@ async def get_current_user(
         )
         print("USER DATA:", user_data.data)
 
+        plan = "free"
+
+        if user_data.data: plan = user_data.data[0].get("plan", "free")
+
         return {
             "id": user.user.id,
-            "email": user.user.email
+            "email": user.user.email,
+            "plan": plan
         }
 
     except Exception as e:
@@ -72,6 +89,12 @@ async def get_current_user(
             detail="Invalid or expired token"
         )
 
+def check_pro_access(current_user):
+    if current_user["plan"] != "pro":
+        raise HTTPException(
+            status_code=403,
+            detail="This feature requires a Pro plan"
+        )
 
 
 app = FastAPI()
@@ -128,13 +151,16 @@ def login():
 @app.post("/api/proposal")
 @limiter.limit("20/minute")
 def create_proposal(request: Request, data: dict, current_user=Depends(get_current_user)):
-    usage = check_usage()
 
-    if not usage["allowed"]:
-        raise HTTPException(
-    status_code=429,
-    detail="Daily limit reached"
-)
+    if current_user["plan"] == "free":
+
+        usage = check_usage(current_user["id"], "proposal")
+
+        if not usage["allowed"]:
+            raise HTTPException(
+                status_code=429,
+                detail="Free plan limit reached. Upgrade to Pro."
+            )
 
     result = generate_proposal(
         job_post = sanitize(data.get("job_description", "")),
@@ -151,7 +177,7 @@ def create_proposal(request: Request, data: dict, current_user=Depends(get_curre
         result
     )
 
-    increment_usage()
+    increment_usage(current_user["id"], "proposal")
 
     return result
 
@@ -160,13 +186,14 @@ def create_proposal(request: Request, data: dict, current_user=Depends(get_curre
 @limiter.limit("20/minute")
 def profile_analyzer(request: Request, data: dict, current_user=Depends(get_current_user)):
 
-    usage = check_usage()
+    if current_user["plan"] == "free":
+        usage = check_usage(current_user["id"], "proposal")
 
-    if not usage["allowed"]:
-        raise HTTPException(
-    status_code=429,
-    detail="Daily limit reached"
-)
+        if not usage["allowed"]:
+            raise HTTPException(
+                status_code=429,
+                detail="Free plan limit reached. Upgrade to Pro."
+            )
     
     profile_text = sanitize(data.get("profile_text"))
 
@@ -179,7 +206,7 @@ def profile_analyzer(request: Request, data: dict, current_user=Depends(get_curr
         result
     )
 
-    increment_usage()
+    increment_usage(current_user["id"], "proposal")
 
     return result
 
@@ -188,13 +215,14 @@ def profile_analyzer(request: Request, data: dict, current_user=Depends(get_curr
 @limiter.limit("20/minute")
 def seo_optimizer(request: Request, data: dict, current_user=Depends(get_current_user)):
 
-    usage = check_usage()
+    if current_user["plan"] == "free":
+        usage = check_usage(current_user["id"], "proposal")
 
-    if not usage["allowed"]:
-       raise HTTPException(
-    status_code=429,
-    detail="Daily limit reached"
-)
+        if not usage["allowed"]:
+            raise HTTPException(
+                status_code=429,
+                detail="Free plan limit reached. Upgrade to Pro."
+            )
 
     title = sanitize(data.get("title", ""))
     description = sanitize(data.get("description", ""))
@@ -213,7 +241,7 @@ def seo_optimizer(request: Request, data: dict, current_user=Depends(get_current
         result
     )
 
-    increment_usage()
+    increment_usage(current_user["id"], "proposal")
 
     return result
 
@@ -290,8 +318,9 @@ def get_usage(
     used = result.data[0]["count"] if result.data else 0
 
     return {
+        "plan": current_user["plan"],
         "used": used,
-        "remaining": max(0, 5 - used)
+        "remaining": "Unlimited" if current_user["plan"] == "pro" else max(0, 5 - used)
     }
 
 @app.get("/api/me")
@@ -299,3 +328,64 @@ async def me(
     current_user=Depends(get_current_user)
 ):
     return current_user
+
+@app.post("/api/payment/checkout")
+async def create_checkout(
+    current_user=Depends(get_current_user)
+):
+    try:
+        print("DEBUG USER:", current_user)
+        print("DEBUG PRICE:", STRIPE_PRICE_ID)
+
+        session = stripe.checkout.Session.create(
+            mode="subscription",
+            line_items=[
+                {
+                    "price": STRIPE_PRICE_ID,
+                    "quantity": 1
+                }
+            ],
+            success_url="http://localhost:3000/payment-success",
+            cancel_url="http://localhost:3000/payment-cancel"
+        )
+
+        return {
+            "checkout_url": session.url
+        }
+
+    except Exception as e:
+        print("STRIPE ERROR:", str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+@app.post("/api/payment/webhook")
+async def stripe_webhook():
+    return {"ok": True}
+
+@app.post("/api/model-compare")
+def model_compare(
+    current_user=Depends(get_current_user)
+):
+    check_pro_access(current_user)
+
+    return {
+        "message": "Model comparison available for Pro users"
+    }
+
+@app.post("/api/payment/cancel")
+def cancel_subscription(
+    current_user=Depends(get_current_user)
+):
+    supabase.table("users").update({
+        "plan": "free"
+    }).eq(
+        "id",
+        current_user["id"]
+    ).execute()
+
+    return {
+        "success": True,
+        "message": "Subscription cancelled successfully"
+    }
