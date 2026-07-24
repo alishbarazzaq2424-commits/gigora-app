@@ -145,7 +145,11 @@ const [keyPoints, setKeyPoints] = useState([]);
         <strong>Logged in as:</strong>
       {user.username}
       </div>
-      <h1>Gigora Profile Analyzer</h1>
+      <h1>Gigora Profile Analyzer
+        <span title="Analyze your freelancer profile and recieve AI-powered improvment">
+          ❓
+        </span>
+      </h1>
 
       <textarea
         rows="8"
@@ -193,7 +197,12 @@ const [keyPoints, setKeyPoints] = useState([]);
 
       <hr />
 
-      <h1>Proposal Generator</h1>
+      <h1>
+       Proposal Generator
+       <span title="Generate professional Upwork proposals using AI">
+        ❓
+       </span>
+       </h1>
 
       <textarea
         rows="8"
@@ -362,7 +371,12 @@ const [keyPoints, setKeyPoints] = useState([]);
 
       <hr />
 
-      <h1>SEO Optimizer</h1>
+      <h1>
+  SEO Optimizer
+  <span title="Optimize your gig title, description and tags for better rankings">
+    ❓
+  </span>
+</h1>
 
       <input
         type="text"
@@ -451,10 +465,26 @@ const [keyPoints, setKeyPoints] = useState([]);
              </ul>
             </>
           )}
-        </div>
-      )}
-    </div>
-  );
+           </div>
+)}
+
+<hr />
+
+<h3>Feedback</h3>
+
+<button
+  onClick={() => alert("Thank you for your feedback!")}
+  style={{
+    padding: "10px 20px",
+    marginTop: "20px",
+    cursor: "pointer"
+  }}
+>
+  Send Feedback
+</button>
+
+</div>
+);
 }
 
 export default App;
