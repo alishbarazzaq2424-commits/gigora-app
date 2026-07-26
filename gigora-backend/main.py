@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from database import supabase
 from ai_service import (
     generate_proposal,
+    generate_proposal_with_model,
     analyze_profile,
     optimize_gig
 )
@@ -38,6 +39,7 @@ print("PRICE ID:", repr(os.getenv("STRIPE_PRICE_ID")))
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from fastapi import Request
+from ai_compare import compare_models
 
 def save_history(user_id, type, input_text, output):
     try:
@@ -62,6 +64,7 @@ async def get_current_user(
         user = supabase.auth.get_user(token)
 
         user_id = user.user.id
+        user_email = user.user.email
 
         user_data = (
             supabase.table("users")
@@ -69,11 +72,13 @@ async def get_current_user(
             .eq("id", user_id)
             .execute()
         )
-        print("USER DATA:", user_data.data)
+
 
         plan = "free"
 
         if user_data.data: plan = user_data.data[0].get("plan", "free")
+
+        print("FINAL PLAN:", plan)
 
         return {
             "id": user.user.id,
@@ -324,10 +329,29 @@ def get_usage(
     }
 
 @app.get("/api/me")
-async def me(
-    current_user=Depends(get_current_user)
-):
-    return current_user
+def me(current_user=Depends(get_current_user)):
+
+    import os
+
+    print("URL =", os.getenv("SUPABASE_URL"))
+    print("KEY =", os.getenv("SUPABASE_KEY")[:20])
+
+    user_id = current_user["id"]
+
+    all_users = supabase.table("users").select("*").execute()
+    print("ALL USERS =", all_users.data)
+
+    result = (
+    supabase
+    .table("users")
+    .select("*")
+    .eq("id", user_id)
+    .execute()
+    )
+
+    return {
+    "matched_user": result.data
+    }
 
 @app.post("/api/payment/checkout")
 async def create_checkout(
@@ -366,13 +390,53 @@ async def stripe_webhook():
 
 @app.post("/api/model-compare")
 def model_compare(
+    data: dict,
     current_user=Depends(get_current_user)
 ):
     check_pro_access(current_user)
 
-    return {
-        "message": "Model comparison available for Pro users"
-    }
+    results = []
+
+    models = [
+     "llama-3.3-70b-versatile",
+     "llama-3.1-8b-instant",
+     "openai/gpt-oss-20b"
+    ]
+
+    for model_name in models:
+        print("TESTING MODEL:", model_name)
+
+        proposal = generate_proposal_with_model(
+            job_post=data.get("job_description",""),
+              tone="Professional",
+              skill="General",
+              platform="Upwork",
+              length="Medium",
+              model_name=model_name
+        )
+
+        print("PROPOSAL GENERATED:", model_name)
+
+        results.append({
+            "model": model_name,
+            "proposal": proposal
+        })
+
+    print("TOTAL RESULTS =", len(results))
+
+    valid_results = [
+        r for r in results
+        if r["proposal"] != "Model failed"
+    ]
+
+    if len(valid_results) == 0:
+        raise HTTPException(
+            status_code=503,
+            detail="All AI services busy. Try again in a minute."
+        )
+
+    return compare_models(valid_results)
+
 
 @app.post("/api/payment/cancel")
 def cancel_subscription(

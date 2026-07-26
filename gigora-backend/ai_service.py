@@ -26,7 +26,73 @@ current_key_index = 0
 def get_model():
     return client
 
-    
+
+def generate_proposal_with_model(
+    job_post,
+    tone,
+    skill,
+    platform,
+    length,
+    model_name
+):
+    try:
+        prompt = f"""
+You are an expert freelancer proposal writer.
+
+Platform: {platform}
+Skill: {skill}
+Tone: {tone}
+
+Example Proposal 1:
+
+Hello,
+
+I reviewed your project requirements and believe I am a strong fit for this job.
+I have experience delivering similar projects and can provide high-quality work within your deadline.
+
+I focus on clear communication, reliability, and client satisfaction.
+
+Thank you for your consideration.
+
+Example Proposal 2:
+
+Hi,
+
+Your project caught my attention because it matches my skills and experience.
+I have successfully completed similar work and can help you achieve the desired results efficiently.
+
+I am available to start immediately and would be happy to discuss the project further.
+
+Thank you.
+
+Job Post:
+{job_post}
+
+Write a professional proposal similar in quality and structure to the examples above.
+"""
+        print("CALLING MODEL:", model_name)
+
+        response = client.chat.completions.create(
+            model=model_name,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            max_tokens=800
+        )
+
+        print("SUCCESS:", model_name)
+
+        return response.choices[0].message.content.strip()
+
+    except Exception as e:
+        print("MODEL FAILED:", model_name)
+        print("ERROR:", e)
+
+        return "Model failed"
+
 def generate_proposal(
     job_post: str,
     tone: str,
@@ -46,10 +112,26 @@ def generate_proposal(
 
         words = word_limits.get(length.lower(), 200)
 
-        example = """
-Hi, I reviewed your project carefully.
-With my experience in this field, I can deliver high-quality results within your timeline.
-I focus on communication, quality, and client satisfaction.
+        EXAMPLE_1 = """
+Hello,
+
+I reviewed your project requirements and believe I am a strong fit for this job.
+I have extensive experience delivering similar projects and can provide high-quality work within your deadline.
+
+I focus on clear communication, reliability, and client satisfaction.
+
+Thank you for your consideration.
+"""
+
+        EXAMPLE_2 = """
+Hi,
+
+Your project caught my attention because it matches my skills and experience.
+I have successfully completed similar work and can help you achieve the desired results efficiently.
+
+I am available to start immediately and would be happy to discuss the project further.
+
+Thank you.
 """
 
         prompt = f"""
@@ -64,8 +146,9 @@ Job Post:
 
 Write around {words} words.
 
-Example:
-{example}
+Examples:
+{EXAMPLE_1}
+{EXAMPLE_2}
 
 Return ONLY valid JSON:
 
@@ -102,13 +185,7 @@ Return ONLY valid JSON:
         print("Proposal Error:", e)
 
         return {
-            "text": "Dear Client, I can help you complete this project with quality work and timely delivery.",
-            "word_count": 20,
-            "key_points": [
-                "Experience",
-                "Quality work",
-                "Fast delivery"
-            ]
+            "error": "All AI services busy. Try again in a minute."
         }
         
     global current_key_index
