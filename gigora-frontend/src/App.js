@@ -2,6 +2,7 @@ import React, { useState, useContext } from "react";
 import { UserContext } from "./context/UserContext";
 import BetaBanner from "./BetaBanner";
 import Onboarding from "./Onboarding";
+import AICompare from "./pages/AICompare";
 
 function App() {
   const { user } = useContext(UserContext);
@@ -470,7 +471,12 @@ const [keyPoints, setKeyPoints] = useState([]);
 
 <hr />
 
+<AICompare />
+
+<hr />
+
 <h3>Feedback</h3>
+
 
 <button
   onClick={() => alert("Thank you for your feedback!")}
