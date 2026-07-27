@@ -1,5 +1,6 @@
 import os
 import json
+import concurrent.futures
 from groq import Groq
 from dotenv import load_dotenv
 
@@ -72,16 +73,20 @@ Write a professional proposal similar in quality and structure to the examples a
 """
         print("CALLING MODEL:", model_name)
 
-        response = client.chat.completions.create(
-            model=model_name,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            max_tokens=800
-        )
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(
+                client.chat.completions.create,
+                model=model_name,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                max_tokens=800
+            )
+
+            response = future.result(timeout=10)
 
         print("SUCCESS:", model_name)
 

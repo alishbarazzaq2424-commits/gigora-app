@@ -41,6 +41,14 @@ from slowapi.util import get_remote_address
 from fastapi import Request
 from ai_compare import compare_models
 
+import logging
+
+logging.basicConfig(
+    filename="errors.log",
+    level=logging.ERROR,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
 def save_history(user_id, type, input_text, output):
     try:
         response = supabase.table("history").insert({
@@ -88,6 +96,7 @@ async def get_current_user(
 
     except Exception as e:
         print("AUTH ERROR:", e)
+        logging.error(str(e))
 
         raise HTTPException(
             status_code=401,
@@ -379,6 +388,7 @@ async def create_checkout(
 
     except Exception as e:
         print("STRIPE ERROR:", str(e))
+        logging.error(str(e))
         raise HTTPException(
             status_code=500,
             detail=str(e)
