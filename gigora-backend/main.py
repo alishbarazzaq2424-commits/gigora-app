@@ -32,6 +32,7 @@ load_dotenv()
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 STRIPE_PRICE_ID = os.getenv("STRIPE_PRICE_ID")
+STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET")
 
 print("ENV FILE LOADED")
 print("STRIPE KEY:", repr(os.getenv("STRIPE_SECRET_KEY")))
@@ -40,6 +41,10 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from fastapi import Request
 from ai_compare import compare_models
+from pydantic import BaseModel
+class LoginData(BaseModel):
+    email: str
+    password: str
 
 import logging
 
@@ -70,6 +75,9 @@ async def get_current_user(
 
     try:
         user = supabase.auth.get_user(token)
+
+        print("AUTH USER ID:", user.user.id)
+        print("AUTH EMAIL:", user.user.email)
 
         user_id = user.user.id
         user_email = user.user.email
@@ -118,7 +126,10 @@ app.state.limiter = limiter
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+         "http://localhost:3000",
+         "http://127.0.0.1:3000"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -142,20 +153,29 @@ def test_supabase():
 @app.post("/signup")
 def signup(data: dict):
 
-    result = supabase.auth.sign_up({
-        "email": "razzaqabdul1218@gmail.com",
-        "password": "yasir112233"
-    })
+    try:
+        result = supabase.auth.sign_up({
+            "email": data["email"],
+            "password": data["password"]
+        })
 
-    return result
+        return {
+            "message": "Signup successful",
+            "user": result.user
+        }
 
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
 
 @app.post("/login")
-def login():
+def login(data: LoginData):
 
     result = supabase.auth.sign_in_with_password({   
-        "email": "razzaqabdul1218@gmail.com",
-        "password": "yasir112233"
+        "email": data.email,
+        "password": data.password
     })
 
     return {
@@ -395,7 +415,43 @@ async def create_checkout(
         )
 
 @app.post("/api/payment/webhook")
-async def stripe_webhook():
+async def stripe_webhook(request: Request):
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload,
+            sig_header,
+            STRIPE_WEBHOOK_SECRET
+        )
+
+    except Exception as e:
+        print("WEBHOOK ERROR:", e)
+        raise HTTPException(status_code=400, detail="Invalid webhook")
+
+    if event["type"] == "checkout.session.completed":
+
+        session = event["data"]["object"]
+
+        customer_email = (
+           session.customer_details.email
+           if session.customer_details
+           else None
+        )
+
+        print("PAYMENT SUCCESS:", customer_email)
+
+        if customer_email:
+            supabase.table("users").update({
+                "plan": "pro"
+            }).eq(
+                "email",
+                customer_email
+            ).execute()
+
+            print("PLAN UPDATED TO PRO")
+
     return {"ok": True}
 
 @app.post("/api/model-compare")

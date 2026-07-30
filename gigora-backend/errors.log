@@ -1,1 +1,22 @@
 2026-07-28 00:48:58,474 - ERROR - invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+2026-07-30 01:11:27,254 - ERROR - invalid JWT: unable to parse or verify signature, token is malformed: token contains an invalid number of segments
+2026-07-30 01:12:36,102 - ERROR - invalid JWT: unable to parse or verify signature, token is malformed: token contains an invalid number of segments
+2026-07-30 01:14:10,110 - ERROR - invalid JWT: unable to parse or verify signature, token is malformed: token contains an invalid number of segments
+2026-07-30 01:15:40,693 - ERROR - invalid JWT: unable to parse or verify signature, token is malformed: token contains an invalid number of segments
+2026-07-30 18:48:45,037 - ERROR - invalid JWT: unable to parse or verify signature, token is malformed: token contains an invalid number of segments
+2026-07-30 18:51:25,178 - ERROR - invalid JWT: unable to parse or verify signature, token is malformed: token contains an invalid number of segments
+2026-07-30 20:10:06,597 - ERROR - invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+2026-07-30 20:11:15,843 - ERROR - invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+2026-07-30 20:12:03,002 - ERROR - invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+2026-07-30 20:13:34,307 - ERROR - The read operation timed out
+2026-07-30 21:02:04,574 - ERROR - invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+2026-07-30 21:12:06,516 - ERROR - invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+2026-07-30 21:13:35,548 - ERROR - invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+2026-07-30 21:15:19,421 - ERROR - invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+2026-07-30 21:18:02,853 - ERROR - invalid JWT: unable to parse or verify signature, token has invalid claims: token is expired
+2026-07-30 22:03:45,520 - ERROR - invalid JWT: unable to parse or verify signature, token is malformed: token contains an invalid number of segments
+2026-07-30 22:03:46,189 - ERROR - invalid JWT: unable to parse or verify signature, token is malformed: token contains an invalid number of segments
+2026-07-30 22:04:17,399 - ERROR - invalid JWT: unable to parse or verify signature, token is malformed: token contains an invalid number of segments
+2026-07-30 22:04:17,703 - ERROR - invalid JWT: unable to parse or verify signature, token is malformed: token contains an invalid number of segments
+2026-07-30 22:23:46,330 - ERROR - invalid JWT: unable to parse or verify signature, token is malformed: token contains an invalid number of segments
+2026-07-30 22:23:46,570 - ERROR - invalid JWT: unable to parse or verify signature, token is malformed: token contains an invalid number of segments
