@@ -11,8 +11,8 @@ export default function AICompare() {
   const compareModels = async () => {
     try {
       setLoading(true);
-
-      const token = "eyJhbGciOiJFUzI1NiIsImtpZCI6IjQ4ZTcyZDEzLTBhNjUtNGNiZS05ZDI3LTY4NzllN2ZhZDE2OCIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2RpcHBic25zbXF0Z3J2a2lmbnluLnN1cGFiYXNlLmNvL2F1dGgvdjEiLCJzdWIiOiI0NjAzNjI4MS1hNDBjLTQ3MTAtOTdhYi05OTA2NjM4OGVmODYiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzg1MTc4NDI1LCJpYXQiOjE3ODUxNzQ4MjUsImVtYWlsIjoicmF6emFxYWJkdWwxMjE4QGdtYWlsLmNvbSIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZW1haWwiLCJwcm92aWRlcnMiOlsiZW1haWwiXX0sInVzZXJfbWV0YWRhdGEiOnsiZW1haWwiOiJyYXp6YXFhYmR1bDEyMThAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBob25lX3ZlcmlmaWVkIjpmYWxzZSwic3ViIjoiNDYwMzYyODEtYTQwYy00NzEwLTk3YWItOTkwNjYzODhlZjg2In0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoicGFzc3dvcmQiLCJ0aW1lc3RhbXAiOjE3ODUxNzQ4MjV9XSwic2Vzc2lvbl9pZCI6IjlkYjBhM2RlLTczOTAtNGI3Ny1iOWE5LTg5ZDBkMzY1M2MyZSIsImlzX2Fub255bW91cyI6ZmFsc2V9.zUk5mMmn71Vvr7EIrm7E6u9Dnho62WgMNXA8cVN8RINIlbhE28mirsAJr4vyWR3DeP3oFvMtgy2zn6TeyQ0ymg";
+      
+      const token = localStorage.getItem("access_token");
       const response = await axios.post(
         "http://localhost:8000/api/model-compare",
         {
