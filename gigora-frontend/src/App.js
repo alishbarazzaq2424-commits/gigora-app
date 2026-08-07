@@ -64,7 +64,7 @@ function App() {
       const token = localStorage.getItem("access_token");
 
       const response = await fetch(
-        "${process.env.REACT_APP_API_URL}/api/payment/checkout",
+        `${process.env.REACT_APP_API_URL}/api/payment/checkout`,
         {
           method: "POST",
           headers: {
