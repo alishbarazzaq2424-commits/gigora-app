@@ -13,7 +13,7 @@ function PaymentSuccess() {
         const token = localStorage.getItem("access_token");
 
         const response = await fetch(
-          "http://127.0.0.1:8000/api/usage",
+          "https://gigora-backend-production.up.railway.app/api/usage",
           {
             headers: {
               "Authorization": `Bearer ${token}`,
